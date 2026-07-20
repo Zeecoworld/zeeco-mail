@@ -7,7 +7,7 @@ import brevo
 from brevo.core.api_error import ApiError
 
 load_dotenv()
-= Flask(__name__, static_folder=".", static_url_path="")
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
 MAX_PER_CALL = 500
