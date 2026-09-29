@@ -2,6 +2,7 @@ import os
 import re
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from stats_routes import stats_bp
 from dotenv import load_dotenv
 import brevo
 from brevo.core.api_error import ApiError
