@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Delivery Report · Bulk Sender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f6f3ec; --paper-raised: #fffdf9; --ink: #211f2b; --ink-soft: #6d6a7a;
+  --line: #ddd6c4; --accent: #2f3e82; --accent-deep: #232f66; --accent-soft: #e8eaf6;
+  --gold: #bb8a3f; --gold-soft: #f4e9d3; --danger: #a1402c; --danger-soft: #f6e4de;
+  --ok: #2f6b4f; --ok-soft: #e0efe7;
+  --mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+  --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --display: "Space Grotesk", "Inter", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.5; }
+.shell { max-width: 960px; margin: 0 auto; padding: 48px 24px 90px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--ink); padding-bottom: 20px; margin-bottom: 28px; }
+h1 { font-family: var(--display); font-size: 32px; margin: 0 0 4px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+header a { color: var(--accent); font-size: 14px; font-weight: 600; }
+
+.controls { display: grid; grid-template-columns: 120px 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 24px; }
+@media (max-width: 720px) { .controls { grid-template-columns: 1fr 1fr; } }
+label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+input, select { width: 100%; border: 1.5px solid var(--line); background: var(--paper-raised); border-radius: 8px;
+  padding: 10px 12px; font-family: var(--sans); font-size: 14px; color: var(--ink); }
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+button.primary { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px 22px;
+  font-size: 14px; font-weight: 600; cursor: pointer; }
+button.primary:hover:not(:disabled) { background: var(--accent-deep); }
+button.primary:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, .tab:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.status { display: none; padding: 12px 14px; border-radius: 8px; font-family: var(--mono); font-size: 13px;
+  background: var(--danger-soft); color: var(--danger); border: 1px solid #ecc4b8; margin-bottom: 20px; white-space: pre-wrap; }
+.status.show { display: block; }
+
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 26px; }
+.stat { background: var(--paper-raised); border: 1.5px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.stat .n { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1.1; }
+.stat .l { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+.stat.opened { border-color: var(--ok); } .stat.opened .n { color: var(--ok); }
+.stat.notopened { border-color: var(--gold); } .stat.notopened .n { color: var(--gold); }
+.stat.bounced { border-color: var(--danger); } .stat.bounced .n { color: var(--danger); }
+.rate { font-size: 13px; color: var(--ink-soft); margin: -12px 0 22px; }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1.5px solid var(--line); margin-bottom: 16px; }
+.tab { background: none; border: none; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--ink-soft);
+  cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1.5px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .c { font-family: var(--mono); font-size: 12px; margin-left: 6px; color: var(--ink-soft); }
+
+.list-tools { display: flex; gap: 10px; margin-bottom: 12px; }
+.list-tools input { max-width: 320px; }
+.list-tools button { background: var(--paper-raised); border: 1.5px solid var(--line); border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink); }
+.list-tools button:hover { border-color: var(--accent); }
+ul.emails { list-style: none; margin: 0; padding: 0; background: var(--paper-raised); border: 1.5px solid var(--line);
+  border-radius: 10px; max-height: 460px; overflow-y: auto; }
+ul.emails li { padding: 10px 14px; font-family: var(--mono); font-size: 13px; border-bottom: 1px solid var(--line); }
+ul.emails li:last-child { border-bottom: none; }
+.empty { padding: 26px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+.note { margin-top: 26px; font-size: 12.5px; color: var(--ink-soft); max-width: 70ch; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div>
+      <h1>Delivery report</h1>
+      <p>Who opened your emails and who hasn't, straight from Brevo.</p>
+    </div>
+    <a href="/">← Back to sender</a>
+  </header>
+
+  <div class="controls">
+    <div>
+      <label for="days">Last (days)</label>
+      <input type="number" id="days" min="1" max="90" value="7" />
+    </div>
+    <div>
+      <label for="tag">Batch</label>
+      <select id="tag"><option value="">All batches</option></select>
+    </div>
+    <div>
+      <label for="token">Admin token</label>
+      <input type="password" id="token" placeholder="Only if ADMIN_TOKEN is set" autocomplete="off" />
+    </div>
+    <button class="primary" id="loadBtn">Load report</button>
+  </div>
+
+  <div class="status" id="status" role="alert"></div>
+
+  <div id="report" hidden>
+    <div class="summary" id="summary"></div>
+    <div class="rate" id="rate"></div>
+
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="list-tools">
+      <input type="text" id="filter" placeholder="Filter emails" />
+      <button id="copyBtn">Copy list</button>
+    </div>
+    <ul class="emails" id="list"></ul>
+
+    <p class="note">
+      Opens are counted when the tracking image loads, so they are a guide, not proof.
+      "Maybe opened" are emails whose image was preloaded by a privacy proxy (such as Apple Mail);
+      the person may not have read them. Anyone who clicked a link is counted as opened.
+    </p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const TABS = [
+  { key: "opened", label: "Opened" },
+  { key: "not_opened", label: "Not opened" },
+  { key: "maybe_opened", label: "Maybe opened" },
+  { key: "clicked", label: "Clicked" },
+  { key: "bounced", label: "Bounced" },
+];
+let data = null;
+let activeTab = "opened";
+
+function showError(msg) { $("status").textContent = msg; $("status").classList.add("show"); }
+function clearError() { $("status").classList.remove("show"); $("status").textContent = ""; }
+
+async function load() {
+  clearError();
+  const btn = $("loadBtn");
+  btn.disabled = true; btn.textContent = "Loading…";
+  const params = new URLSearchParams({ days: $("days").value || 7 });
+  if ($("tag").value) params.set("tag", $("tag").value);
+  try {
+    const res = await fetch("/stats/data?" + params, { headers: { "X-Admin-Token": $("token").value } });
+    const body = await res.json();
+    if (!res.ok) {
+      showError((body.error || "Something went wrong.") + (body.details ? "\n" + body.details : ""));
+      return;
+    }
+    data = body;
+    populateTags(body.tags, body.tag);
+    render();
+  } catch (err) {
+    showError("Could not reach the server: " + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Load report";
+  }
+}
+
+function populateTags(tags, selected) {
+  const sel = $("tag");
+  sel.innerHTML = '<option value="">All batches</option>';
+  const all = new Set(tags); if (selected) all.add(selected);
+  [...all].forEach((t) => {
+    const o = document.createElement("option");
+    o.value = t; o.textContent = t; if (t === selected) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function render() {
+  const c = data.counts;
+  const cards = [
+    ["delivered", c.delivered, "Delivered", ""],
+    ["opened", c.opened, "Opened", "opened"],
+    ["not_opened", c.not_opened, "Not opened", "notopened"],
+    ["maybe_opened", c.maybe_opened, "Maybe opened", ""],
+    ["clicked", c.clicked, "Clicked", ""],
+    ["bounced", c.bounced, "Bounced", "bounced"],
+  ];
+  $("summary").innerHTML = cards.map(([, n, l, cls]) =>
+    `<div class="stat ${cls}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+  const rate = c.delivered ? Math.round((c.opened / c.delivered) * 100) : 0;
+  $("rate").textContent = `Open rate: ${rate}% of delivered emails`;
+
+  $("tabs").innerHTML = TABS.map((t) =>
+    `<button class="tab" role="tab" data-key="${t.key}" aria-selected="${t.key === activeTab}">${t.label}<span class="c">${data.counts[t.key]}</span></button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+    activeTab = b.dataset.key; render();
+  }));
+
+  renderList();
+  $("report").hidden = false;
+}
+
+function renderList() {
+  const q = $("filter").value.trim().toLowerCase();
+  const items = (data[activeTab] || []).filter((e) => e.includes(q));
+  const ul = $("list");
+  ul.innerHTML = "";
+  if (!items.length) {
+    ul.innerHTML = '<li class="empty">Nothing here for this filter.</li>';
+    return;
+  }
+  items.forEach((e) => { const li = document.createElement("li"); li.textContent = e; ul.appendChild(li); });
+}
+
+$("filter").addEventListener("input", () => data && renderList());
+$("loadBtn").addEventListener("click", load);
+$("copyBtn").addEventListener("click", async () => {
+  if (!data) return;
+  await navigator.clipboard.writeText((data[activeTab] || []).join("\n"));
+  $("copyBtn").textContent = "Copied";
+  setTimeout(() => ($("copyBtn").textContent = "Copy list"), 1200);
+});
+</script>
+</body>
+</html>
