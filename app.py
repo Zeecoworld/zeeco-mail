@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime, timezone          # NEW
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from stats_routes import stats_bp
@@ -10,6 +11,7 @@ from brevo.core.api_error import ApiError
 load_dotenv()
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
+app.register_blueprint(stats_bp)                 # NEW
 
 MAX_PER_CALL = 500
 
@@ -67,11 +69,14 @@ def send_batch():
 
     client = brevo.Brevo(api_key=api_key)
 
+    batch_tag = f"batch-{datetime.now(timezone.utc):%Y%m%d-%H%M}"   # NEW
+
     send_kwargs = dict(
         sender=brevo.SendTransacEmailRequestSender(name=sender_name or sender_email, email=sender_email),
         subject=subject,
         html_content=html_body,
         message_versions=message_versions,
+        tags=[batch_tag],                                            # NEW
     )
     if attachment_payload:
         send_kwargs["attachment"] = [
@@ -85,7 +90,6 @@ def send_batch():
     except Exception as e:
         return jsonify({"error": "Request to Brevo failed", "details": str(e)}), 500
 
-
     message_ids = None
     try:
         message_ids = getattr(result, "message_ids", None) or getattr(result, "message_id", None)
@@ -96,6 +100,7 @@ def send_batch():
         "success": True,
         "sent": len(recipients),
         "messageIds": message_ids,
+        "batchTag": batch_tag,                                       # NEW
     }), 200
 
 
